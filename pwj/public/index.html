@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>약속 날씨 판결기</title>
+<style>body{font:15px/1.6 system-ui,"Noto Sans KR",sans-serif;max-width:720px;margin:0 auto;padding:16px;background:#f5f7fb;color:#1b2433}
+.c{background:#fff;border:1px solid #d9e0ec;border-radius:12px;padding:14px;margin-bottom:12px}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+label{display:block;font-size:12px;color:#5d6b82}input,select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #d9e0ec;border-radius:8px;font:inherit}
+button{border:0;border-radius:8px;padding:9px 14px;background:#2f6df6;color:#fff;font:inherit;cursor:pointer}.v{font-size:26px;font-weight:700}.m{border:1px solid #d9e0ec;border-radius:8px;padding:8px;margin-top:8px;white-space:pre-wrap}.n{font-size:12px;color:#5d6b82}</style></head><body>
+<h1>오늘 약속, 가도 될까?</h1>
+<div class="c"><div class="g">
+<div><label>지역</label><select id="city"><option>서울</option><option>부산</option><option>대구</option><option>인천</option><option>광주</option><option selected>대전</option><option>울산</option><option>세종</option><option>제주</option></select></div>
+<div><label>날짜</label><input id="date" type="date"></div><div><label>시각(0~23시)</label><input id="hour" type="number" min="0" max="23" value="15"></div>
+<div><label>약속 성격</label><select id="place"><option>야외</option><option>실내</option></select></div>
+<div><label>중요도</label><select id="imp"><option>가벼움</option><option selected>보통</option><option>중요</option></select></div>
+<div><label>관계</label><select id="rel"><option>친구</option><option>동료</option><option>상사</option></select></div></div>
+<label style="margin-top:8px">개인 사정 한 줄(선택, 저장 안 됨 · 건강 정보는 적지 마세요)</label><input id="why">
+<p><button id="go">판결 받기</button></p><div id="st" class="n"></div></div>
+<div id="out" class="c" hidden><div class="v" id="v"></div><div id="sc" class="n"></div><p id="vt"></p><div id="pl"></div><div id="ms"></div>
+<p class="n" id="ft"></p></div>
+<script>
+const $=i=>document.getElementById(i);$("date").value=new Date().toISOString().slice(0,10);
+$("go").onclick=async()=>{$("st").textContent="조회 중…";$("out").hidden=true;
+try{const r=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({city:$("city").value,date:$("date").value,hour:+$("hour").value,place:$("place").value,imp:$("imp").value,rel:$("rel").value,why:$("why").value})});
+const d=await r.json();if(!r.ok)throw new Error(d.error);$("st").textContent="";$("out").hidden=false;$("ms").textContent="";$("pl").textContent="";
+if(d.care){$("v").textContent="";$("sc").textContent="";$("vt").textContent=d.care;$("ft").textContent="";return}
+$("v").textContent=d.verdict;$("sc").textContent=`조정 필요도 ${d.total}/100 · 근거: ${d.reasons.join(", ")||"특이사항 없음"} · 사정 유형: ${d.type}`;$("vt").textContent=d.verdict_text;
+if(d.places&&d.places.length)$("pl").textContent="근처 실내 후보: "+d.places.join(", ");
+(d.messages||[]).forEach(m=>{const e=document.createElement("div");e.className="m";e.textContent=m.label+"\n"+m.text;const b=document.createElement("button");b.textContent="복사";b.onclick=()=>navigator.clipboard.writeText(m.text);e.appendChild(document.createElement("br"));e.appendChild(b);$("ms").appendChild(e)});
+$("ft").textContent=`예보 발표 ${d.forecast.issued}(기상청 단기예보) · 초미세먼지는 현재 측정 평균(한국환경공단 에어코리아) · 참고용이니 당일 다시 확인하세요.`;
+}catch(e){$("st").textContent="오류: "+e.message}};
+</script></body></html>
