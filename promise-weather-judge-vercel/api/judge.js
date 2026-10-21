@@ -33,9 +33,12 @@ function baseTime() { // 가장 최근 발표 시각(발표 후 10분 뒤부터 
 }
 
 async function getJson(url, params, headers) {
+  const name = url.split("/").slice(-1)[0];
   const r = await fetch(url + "?" + new URLSearchParams(params), { headers });
-  if(!r.ok) throw new Error(url.split("/").slice(-1)[0] + " HTTP " + r.status);
-  return r.json();
+  const t = await r.text();
+  const clip = t.split(DKEY).join("***").replace(/\s+/g, " ").slice(0, 200); // 키는 가리고 응답 앞부분만 표시
+  if(!r.ok) throw new Error(name + " HTTP " + r.status + " / " + clip);
+  try { return JSON.parse(t); } catch(e) { throw new Error(name + " 응답 형식 오류 / " + clip); }
 }
 
 async function forecast(city, date, hour) {
